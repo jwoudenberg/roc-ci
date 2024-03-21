@@ -13,7 +13,7 @@ job =
     _ <- Ci.step2 "release" release binary testsPass
     Ci.done
 
-buildBinary : { gitRoot : Dir } -> Task File Str
+buildBinary : { gitRoot : Dir }* -> Task File Str
 
 runTests : File -> Task [TestsPass] Str
 

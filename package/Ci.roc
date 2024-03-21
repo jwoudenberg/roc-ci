@@ -14,33 +14,13 @@ interface Ci
         # Setup steps
         setupGit,
     ]
-    imports [pf.Task.{ Task }, rvn.Rvn]
+    imports [pf.Task.{ Task }, rvn.Rvn, Job]
 
 # TODO: Figure out how to pull File/Dir values out of arbitrary input structures
 
-RunError : [UserError Str, InputDecodingFailed]
+Job : Job.Job
 
-Step : {
-    name : Str,
-    dependencies : List Str,
-    run : List U8 -> Task (List U8) RunError,
-}
-
-Job := List [Step Step, ConstructionError Str]
-
-addStep : Job, Step -> Job
-addStep = \@Job steps, step ->
-    nameAlreadyUsed = List.any
-        steps
-        (\otherStep ->
-            when otherStep is
-                ConstructionError _ -> Bool.false
-                Step { name } -> name == step.name
-        )
-    if nameAlreadyUsed then
-        @Job (List.append steps (ConstructionError "Duplicate step name: $(step.name)"))
-    else
-        @Job (List.append steps (Step step))
+done = Job.done
 
 Input val := {
     dependsOn : Str,
@@ -49,9 +29,6 @@ Input val := {
 File := {} implements [Encoding, Decoding]
 
 Dir := {} implements [Encoding, Decoding]
-
-done : Job
-done = @Job []
 
 step0 : Str,
     Task b Str,
@@ -68,7 +45,7 @@ step0 = \name, run, next ->
     }
 
     next (@Input { dependsOn: step.name })
-    |> addStep step
+    |> Job.addStep step
 
 step1 : Str,
     (a -> Task b Str),
@@ -93,7 +70,7 @@ step1 = \name, run, @Input { dependsOn }, next ->
     }
 
     next (@Input { dependsOn: step.name })
-    |> addStep step
+    |> Job.addStep step
 
 step2 : Str,
     (a, b -> Task c Str),
@@ -128,6 +105,6 @@ step2 = \name, run, @Input input1, @Input input2, next ->
     }
 
     next (@Input { dependsOn: step.name })
-    |> addStep step
+    |> Job.addStep step
 
-setupGit : Task { gitRoot : Dir } Str
+setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
