@@ -8,10 +8,14 @@ job =
 
     binary <- Ci.step1 "build binary" buildBinary repoDetails
 
-    _ <- Ci.step1 "run tests" runTests binary
+    testsPass <- Ci.step1 "run tests" runTests binary
+
+    _ <- Ci.step2 "release" release binary testsPass
 
     Ci.done
 
 buildBinary : { gitRoot : Dir } -> Task File
 
-runTests : File -> Task {}
+runTests : File -> Task [TestsPass]
+
+release : File, [TestsPass] -> Task {}
