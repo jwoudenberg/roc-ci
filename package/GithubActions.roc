@@ -1,4 +1,4 @@
-interface Runner.Local
+interface GithubActions
     exposes [
         run,
     ]

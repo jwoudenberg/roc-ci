@@ -9,8 +9,8 @@ app "roc-ci"
         pf.Stdout,
         rvn.Rvn,
         Example,
-        Runner.GithubActions,
-        Runner.Local,
+        GithubActions,
+        Local,
     ]
     provides [main] to pf
 
@@ -24,8 +24,8 @@ main =
     job = Example.job
 
     when args is
-        [] | ["--local"] -> Runner.Local.run job
-        ["--github-actions"] -> Runner.GithubActions.run job
+        [] | ["--local"] -> Local.run job
+        ["--github-actions"] -> GithubActions.run job
         _ ->
             Stdout.line
                 """
