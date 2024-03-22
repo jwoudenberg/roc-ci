@@ -1,12 +1,20 @@
 interface Example
-    exposes [job]
+    exposes [jobs]
     imports [
         pf.Task.{ Task },
         Ci.{ File, Dir },
+        Local,
+        GithubActions,
     ]
 
-job : Ci.Job
-job =
+jobs = [
+    Local.onCliCommand "test" buildAndTest,
+    GithubActions.onPullRequest [] buildAndTest,
+
+]
+
+buildAndTest : Ci.Job
+buildAndTest =
     repoDetails <- Ci.step0 "setup git" Ci.setupGit
     binary <- Ci.step1 "build binary" buildBinary repoDetails
     testsPass <- Ci.step1 "run tests" runTests binary

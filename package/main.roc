@@ -9,8 +9,8 @@ app "roc-ci"
         pf.Stdout,
         rvn.Rvn,
         Example,
-        GithubActions,
         Local,
+        GithubActions,
     ]
     provides [main] to pf
 
@@ -21,17 +21,17 @@ main =
     # Job is currently a module in this project. The plan is for this ci
     # project to turn into a platform, and then the job file will be a Roc
     # application using that platform.
-    job = Example.job
+    jobs = Example.jobs
 
     when args is
-        [] | ["--local"] -> Local.run job
-        ["--github-actions"] -> GithubActions.run job
+        ["local", .. as rest] -> Local.run jobs rest
+        ["gh-actions", .. as rest] -> GithubActions.run jobs rest
         _ ->
             Stdout.line
                 """
-                roc-ci
+                roc-ci <runner>
 
-                --local             Run Job on this machine
-                --github-actions    Generate github actions files
-                --help              This help text
+                runner:
+                    local             Run Job on this machine
+                    github-actions    Generate github actions files
                 """
