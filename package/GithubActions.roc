@@ -6,6 +6,7 @@ interface GithubActions
 
         # Internals
         run,
+        Hook,
     ]
     imports [
         pf.Task.{ Task },
@@ -36,7 +37,7 @@ PullRequestTriggers : [
     AutoMergeDisabled,
 ]
 
-onPullRequest : List PullRequestTriggers, Job -> (Hook *, Job)
+onPullRequest : List PullRequestTriggers, Job -> ([GithubActions Hook], Job)
 
 ReleaseTriggers : [
     Published,
@@ -48,8 +49,11 @@ ReleaseTriggers : [
     Released,
 ]
 
-onRelease : List ReleaseTriggers, Job -> (Hook *, Job)
+onRelease : List ReleaseTriggers, Job -> ([GithubActions Hook], Job)
 
-Hook a : [PullRequest PullRequestTriggers, Release ReleaseTriggers]a
+Hook : [
+    PullRequest PullRequestTriggers,
+    Release ReleaseTriggers,
+]
 
-run : List ([]*, Job), List Str -> Task {} *
+run : List (Hook, Job), List Str -> Task {} *

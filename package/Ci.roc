@@ -118,13 +118,26 @@ step2 = \name, run, @Input input1, @Input input2, next ->
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
 
-main : List ([]*, Job) -> Task {} I32
+main : List (_, Job) -> Task {} I32
 main = \jobs ->
     args <- Arg.list |> Task.await
 
+    { githubActions, local } =
+        List.walk
+            jobs
+            { githubActions: [], local: [] }
+            (\state, hook ->
+                when hook is
+                    (GithubActions x, job) ->
+                        { state & githubActions: List.append state.githubActions (x, job) }
+
+                    (Local x, job) ->
+                        { state & local: List.append state.local (x, job) }
+            )
+
     when args is
-        ["local", .. as rest] -> Local.run jobs rest
-        ["gh-actions", .. as rest] -> GithubActions.run jobs rest
+        ["local", .. as rest] -> Local.run local rest
+        ["github-actions", .. as rest] -> GithubActions.run githubActions rest
         _ ->
             Stdout.line
                 """

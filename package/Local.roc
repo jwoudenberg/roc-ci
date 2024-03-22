@@ -5,14 +5,15 @@ interface Local
 
         # Internals
         run,
+        Hook,
     ]
     imports [
         pf.Task.{ Task },
         Job.{ Job },
     ]
 
-onCliCommand : Str, Job -> (Hook *, Job)
+onCliCommand : Str, Job -> ([Local Hook], Job)
 
-Hook a : [CliCommand Str]a
+Hook : [CliCommand Str]
 
-run : List ([]*, Job), List Str -> Task {} *
+run : List (Hook, Job), List Str -> Task {} *
