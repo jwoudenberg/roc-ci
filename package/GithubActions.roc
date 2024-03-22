@@ -52,4 +52,4 @@ onRelease : List ReleaseTriggers, Job -> (Hook *, Job)
 
 Hook a : [PullRequest PullRequestTriggers, Release ReleaseTriggers]a
 
-run : List (Hook *, Job), List Str -> Task {} *
+run : List ([]*, Job), List Str -> Task {} *

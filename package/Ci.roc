@@ -3,6 +3,7 @@ interface Ci
         Job,
         File,
         Dir,
+        main,
 
         # Job definition
         Input,
@@ -14,7 +15,15 @@ interface Ci
         # Setup steps
         setupGit,
     ]
-    imports [pf.Task.{ Task }, rvn.Rvn, Job]
+    imports [
+        pf.Task.{ Task },
+        pf.Arg.{ Parser },
+        pf.Stdout,
+        rvn.Rvn,
+        Job,
+        Local,
+        GithubActions,
+    ]
 
 # TODO: Figure out how to pull File/Dir values out of arbitrary input structures
 
@@ -108,3 +117,20 @@ step2 = \name, run, @Input input1, @Input input2, next ->
     |> Job.addStep step
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
+
+main : List ([]*, Job) -> Task {} I32
+main = \jobs ->
+    args <- Arg.list |> Task.await
+
+    when args is
+        ["local", .. as rest] -> Local.run jobs rest
+        ["gh-actions", .. as rest] -> GithubActions.run jobs rest
+        _ ->
+            Stdout.line
+                """
+                roc-ci <runner>
+
+                runner:
+                    local             Run Job on this machine
+                    github-actions    Generate github actions files
+                """

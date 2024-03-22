@@ -5,33 +5,31 @@ app "roc-ci"
     }
     imports [
         pf.Task.{ Task },
-        pf.Arg.{ Parser },
         pf.Stdout,
+        pf.Arg,
         rvn.Rvn,
-        Example,
+        Ci.{ File, Dir },
         Local,
         GithubActions,
     ]
     provides [main] to pf
 
-main : Task {} I32
-main =
-    args <- Arg.list |> Task.await
+main = Ci.main [
+    Local.onCliCommand "test" buildAndTest,
+    GithubActions.onPullRequest [] buildAndTest,
 
-    # Job is currently a module in this project. The plan is for this ci
-    # project to turn into a platform, and then the job file will be a Roc
-    # application using that platform.
-    jobs = Example.jobs
+]
 
-    when args is
-        ["local", .. as rest] -> Local.run jobs rest
-        ["gh-actions", .. as rest] -> GithubActions.run jobs rest
-        _ ->
-            Stdout.line
-                """
-                roc-ci <runner>
+buildAndTest : Ci.Job
+buildAndTest =
+    repoDetails <- Ci.step0 "setup git" Ci.setupGit
+    binary <- Ci.step1 "build binary" buildBinary repoDetails
+    testsPass <- Ci.step1 "run tests" runTests binary
+    _ <- Ci.step2 "release" release binary testsPass
+    Ci.done
 
-                runner:
-                    local             Run Job on this machine
-                    github-actions    Generate github actions files
-                """
+buildBinary : { gitRoot : Dir }* -> Task File Str
+
+runTests : File -> Task [TestsPass] Str
+
+release : File, [TestsPass] -> Task {} Str

@@ -15,4 +15,4 @@ onCliCommand : Str, Job -> (Hook *, Job)
 
 Hook a : [CliCommand Str]a
 
-run : List (Hook *, Job), List Str -> Task {} *
+run : List ([]*, Job), List Str -> Task {} *
