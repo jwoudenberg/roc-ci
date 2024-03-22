@@ -1,4 +1,4 @@
-interface Job
+interface CiInternal
     exposes [
         Job,
         addStep,

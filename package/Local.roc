@@ -1,19 +1,10 @@
 interface Local
     exposes [
-        # API
         onCliCommand,
-
-        # Internals
-        run,
-        Hook,
     ]
     imports [
-        pf.Task.{ Task },
-        Job.{ Job },
+        CiInternal.{ Job },
+        Hook.{ Hook },
     ]
 
-onCliCommand : Str, Job -> ([Local Hook], Job)
-
-Hook : [CliCommand Str]
-
-run : List (Hook, Job), List Str -> Task {} *
+onCliCommand : Str, Job -> Hook

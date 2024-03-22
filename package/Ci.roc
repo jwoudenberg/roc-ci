@@ -20,16 +20,19 @@ interface Ci
         pf.Arg.{ Parser },
         pf.Stdout,
         rvn.Rvn,
-        Job,
-        Local,
-        GithubActions,
+        CiInternal,
+        Hook,
+        LocalInternal,
+        GithubActionsInternal,
     ]
 
 # TODO: Figure out how to pull File/Dir values out of arbitrary input structures
 
-Job : Job.Job
+Job : CiInternal.Job
 
-done = Job.done
+Hook : Hook.Hook
+
+done = CiInternal.done
 
 Input val := {
     dependsOn : Str,
@@ -54,7 +57,7 @@ step0 = \name, run, next ->
     }
 
     next (@Input { dependsOn: step.name })
-    |> Job.addStep step
+    |> CiInternal.addStep step
 
 step1 : Str,
     (a -> Task b Str),
@@ -79,7 +82,7 @@ step1 = \name, run, @Input { dependsOn }, next ->
     }
 
     next (@Input { dependsOn: step.name })
-    |> Job.addStep step
+    |> CiInternal.addStep step
 
 step2 : Str,
     (a, b -> Task c Str),
@@ -114,20 +117,20 @@ step2 = \name, run, @Input input1, @Input input2, next ->
     }
 
     next (@Input { dependsOn: step.name })
-    |> Job.addStep step
+    |> CiInternal.addStep step
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
 
-main : List (_, Job) -> Task {} I32
-main = \jobs ->
+main : List Hook -> Task {} I32
+main = \hooks ->
     args <- Arg.list |> Task.await
 
     { githubActions, local } =
         List.walk
-            jobs
+            hooks
             { githubActions: [], local: [] }
             (\state, hook ->
-                when hook is
+                when Hook.unwrap hook is
                     (GithubActions x, job) ->
                         { state & githubActions: List.append state.githubActions (x, job) }
 
@@ -136,8 +139,8 @@ main = \jobs ->
             )
 
     when args is
-        ["local", .. as rest] -> Local.run local rest
-        ["github-actions", .. as rest] -> GithubActions.run githubActions rest
+        ["local", .. as rest] -> LocalInternal.run local rest
+        ["github-actions", .. as rest] -> GithubActionsInternal.run githubActions rest
         _ ->
             Stdout.line
                 """
