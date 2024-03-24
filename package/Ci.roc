@@ -131,10 +131,10 @@ main = \hooks ->
             { githubActions: [], local: [] }
             (\state, hook ->
                 when Hook.unwrap hook is
-                    (GithubActions x, job) ->
+                    { trigger: GithubActions x, job } ->
                         { state & githubActions: List.append state.githubActions (x, job) }
 
-                    (Local x, job) ->
+                    { trigger: Local x, job } ->
                         { state & local: List.append state.local (x, job) }
             )
 

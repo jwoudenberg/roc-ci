@@ -1,6 +1,7 @@
 interface Hook
     exposes [
         Hook,
+        wrap,
         unwrap,
     ]
     imports [
@@ -9,15 +10,18 @@ interface Hook
         CiInternal.{ Job },
     ]
 
-HookContents : (
-    [
+HookContents : {
+    trigger : [
         GithubActions GithubActionsInternal.Hook,
         Local LocalInternal.Hook,
     ],
-    Job,
-)
+    job : Job,
+}
 
 Hook := HookContents
+
+wrap : HookContents -> Hook
+wrap = \options -> @Hook options
 
 unwrap : Hook -> HookContents
 unwrap = \@Hook options -> options

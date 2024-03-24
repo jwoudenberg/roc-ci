@@ -45,8 +45,8 @@ ReleaseTriggers : [
 ]
 
 Hook : [
-    PullRequest PullRequestTriggers,
-    Release ReleaseTriggers,
+    PullRequest (List PullRequestTriggers),
+    Release (List ReleaseTriggers),
 ]
 
 run : List (Hook, Job), List Str -> Task {} *

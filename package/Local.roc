@@ -8,3 +8,5 @@ interface Local
     ]
 
 onCliCommand : Str, Job -> Hook
+onCliCommand = \cmd, job ->
+    Hook.wrap { job, trigger: Local (CliCommand cmd) }
