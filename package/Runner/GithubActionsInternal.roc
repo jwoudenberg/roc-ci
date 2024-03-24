@@ -49,4 +49,4 @@ Hook : [
     Release (List ReleaseTriggers),
 ]
 
-run : List (Hook, Job), List Str -> Task {} *
+run : List (Hook, Job), List Str -> Task {} I32

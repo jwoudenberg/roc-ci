@@ -17,7 +17,6 @@ app "roc-ci"
 main = Ci.main [
     Runner.Local.onCliCommand "test" buildAndTest,
     Runner.GithubActions.onPullRequest [] buildAndTest,
-
 ]
 
 buildAndTest : Ci.Job
@@ -30,6 +29,6 @@ buildAndTest =
 
 buildBinary : { gitRoot : Dir }* -> Task File Str
 
-runTests : File -> Task [TestsPass] Str
+runTests : File -> Task {} Str
 
-release : File, [TestsPass] -> Task {} Str
+release : File, {} -> Task {} Str
