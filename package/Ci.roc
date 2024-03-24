@@ -120,6 +120,7 @@ step2 = \name, run, @Input input1, @Input input2, next ->
     |> CiInternal.addStep step
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
+setupGit = Task.err "setupGit unimplemented"
 
 main : List Hook -> Task {} I32
 main = \hooks ->
@@ -138,15 +139,29 @@ main = \hooks ->
                         { state & local: List.append state.local (x, job) }
             )
 
-    when args is
-        ["local", .. as rest] -> Runner.LocalInternal.run local rest
-        ["github-actions", .. as rest] -> Runner.GithubActionsInternal.run githubActions rest
-        _ ->
-            Stdout.line
-                """
-                roc-ci <runner>
+    when List.dropFirst args 1 is
+        ["local", .. as rest] if !(List.isEmpty local) ->
+            Runner.LocalInternal.run local rest
+            |> Task.mapErr (\_ -> 1)
 
-                runner:
-                    local             Run Job on this machine
-                    github-actions    Generate github actions files
-                """
+        ["github-actions", .. as rest] if !(List.isEmpty githubActions) ->
+            Runner.GithubActionsInternal.run githubActions rest
+            |> Task.mapErr (\_ -> 1)
+
+        _ ->
+            {} <- Stdout.line "Usage: roc-ci <runner> [params]" |> Task.await
+            {} <- Stdout.line "" |> Task.await
+
+            if List.isEmpty hooks then
+                Stdout.line "Add some hooks to run this pipeline!"
+            else
+                printIf = \line, list, andThen ->
+                    if List.isEmpty list then
+                        Task.ok {} |> Task.await andThen
+                    else
+                        Stdout.line line |> Task.await andThen
+
+                {} <- "runners:" |> Stdout.line |> Task.await
+                {} <- "  local             Run jobs on this machine" |> printIf local
+                {} <- "  github-actions    Generate github actions files" |> printIf githubActions
+                Task.ok {}

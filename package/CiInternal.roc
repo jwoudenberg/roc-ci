@@ -6,38 +6,35 @@ interface CiInternal
         spec,
         JobSpec,
         Step,
-        RunError,
     ]
     imports [pf.Task.{ Task }]
 
 Job := JobSpec
 
-JobSpec : List [Step Step, ConstructionError Str]
-
-RunError : [UserError Str, InputDecodingFailed]
+JobSpec : { steps : List Step, errors : List Str }
 
 Step : {
     name : Str,
     dependencies : List Str,
-    run : List U8 -> Task (List U8) RunError,
+    run : List U8 -> Task (List U8) [UserError Str, InputDecodingFailed],
 }
 
 addStep : Job, Step -> Job
-addStep = \@Job steps, step ->
-    nameAlreadyUsed = List.any
-        steps
-        (\otherStep ->
-            when otherStep is
-                ConstructionError _ -> Bool.false
-                Step { name } -> name == step.name
-        )
+addStep = \@Job { steps, errors }, step ->
+    nameAlreadyUsed = List.any steps (\{ name } -> name == step.name)
     if nameAlreadyUsed then
-        @Job (List.append steps (ConstructionError "Duplicate step name: $(step.name)"))
+        @Job {
+            steps,
+            errors: List.append errors "Duplicate step name: $(step.name)",
+        }
     else
-        @Job (List.append steps (Step step))
+        @Job {
+            steps: List.append steps step,
+            errors,
+        }
 
 done : Job
-done = @Job []
+done = @Job { steps: [], errors: [] }
 
 spec : Job -> JobSpec
 spec = \@Job job -> job
