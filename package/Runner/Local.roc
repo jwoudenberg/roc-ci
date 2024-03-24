@@ -1,4 +1,4 @@
-interface Local
+interface Runner.Local
     exposes [
         onCliCommand,
     ]

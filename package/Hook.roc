@@ -5,15 +5,15 @@ interface Hook
         unwrap,
     ]
     imports [
-        GithubActionsInternal,
-        LocalInternal,
+        Runner.GithubActionsInternal,
+        Runner.LocalInternal,
         CiInternal.{ Job },
     ]
 
 HookContents : {
     trigger : [
-        GithubActions GithubActionsInternal.Hook,
-        Local LocalInternal.Hook,
+        GithubActions Runner.GithubActionsInternal.Hook,
+        Local Runner.LocalInternal.Hook,
     ],
     job : Job,
 }

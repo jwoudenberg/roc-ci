@@ -9,14 +9,14 @@ app "roc-ci"
         pf.Arg,
         rvn.Rvn,
         Ci.{ File, Dir },
-        Local,
-        GithubActions,
+        Runner.Local,
+        Runner.GithubActions,
     ]
     provides [main] to pf
 
 main = Ci.main [
-    Local.onCliCommand "test" buildAndTest,
-    GithubActions.onPullRequest [] buildAndTest,
+    Runner.Local.onCliCommand "test" buildAndTest,
+    Runner.GithubActions.onPullRequest [] buildAndTest,
 
 ]
 

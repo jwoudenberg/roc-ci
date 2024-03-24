@@ -1,4 +1,4 @@
-interface LocalInternal
+interface Runner.LocalInternal
     exposes [
         run,
         Hook,

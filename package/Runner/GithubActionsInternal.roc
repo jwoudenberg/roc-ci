@@ -1,4 +1,4 @@
-interface GithubActionsInternal
+interface Runner.GithubActionsInternal
     exposes [
         run,
         Hook,

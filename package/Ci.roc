@@ -22,8 +22,8 @@ interface Ci
         rvn.Rvn,
         CiInternal,
         Hook,
-        LocalInternal,
-        GithubActionsInternal,
+        Runner.LocalInternal,
+        Runner.GithubActionsInternal,
     ]
 
 # TODO: Figure out how to pull File/Dir values out of arbitrary input structures
@@ -139,8 +139,8 @@ main = \hooks ->
             )
 
     when args is
-        ["local", .. as rest] -> LocalInternal.run local rest
-        ["github-actions", .. as rest] -> GithubActionsInternal.run githubActions rest
+        ["local", .. as rest] -> Runner.LocalInternal.run local rest
+        ["github-actions", .. as rest] -> Runner.GithubActionsInternal.run githubActions rest
         _ ->
             Stdout.line
                 """

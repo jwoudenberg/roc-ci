@@ -1,4 +1,4 @@
-interface GithubActions
+interface Runner.GithubActions
     exposes [
         onPullRequest,
         onRelease,
@@ -6,7 +6,7 @@ interface GithubActions
     imports [
         CiInternal.{ Job },
         Hook.{ Hook },
-        GithubActionsInternal.{ PullRequestTriggers, ReleaseTriggers },
+        Runner.GithubActionsInternal.{ PullRequestTriggers, ReleaseTriggers },
     ]
 
 onPullRequest : List PullRequestTriggers, Job -> Hook
