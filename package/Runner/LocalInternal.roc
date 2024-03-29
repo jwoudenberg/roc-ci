@@ -50,11 +50,11 @@ showHelp = \cmds ->
 
 runJob : Job -> Task {} Error
 runJob = \job ->
-    { steps, errors } = CiInternal.spec job
+    { steps, runFns, errors } = CiInternal.spec job
     if !(List.isEmpty errors) then
         Task.err (ConstructionErrors errors)
     else
-        runSteps steps (Dict.empty {})
+        runSteps steps runFns (Dict.empty {})
 
 runErrorToStr : Error -> Str
 runErrorToStr = \err ->
@@ -74,11 +74,15 @@ runErrorToStr = \err ->
                 "I found some problems with this job:\n"
                 (\acc, msg -> Str.concat acc "- $(msg)\n")
 
-runSteps : List Step, Dict Str (List U8) -> Task {} Error
-runSteps = \steps, results ->
+runSteps :
+    List Step,
+    List (List U8 -> Task (List U8) [UserError Str, InputDecodingFailed]),
+    Dict Str (List U8)
+    -> Task {} Error
+runSteps = \steps, runFns, results ->
     when steps is
         [] -> Task.ok {}
-        [step, .. as rest] ->
+        [step, .. as restSteps] ->
             input <-
                 List.walk
                     step.dependencies
@@ -93,8 +97,12 @@ runSteps = \steps, results ->
                     )
                 |> Task.fromResult
                 |> Task.await
+            (runFn, restRunFns) =
+                when runFns is
+                    [] -> crash ""
+                    [head, .. as rest] -> (head, rest)
             output <-
-                step.run input
+                runFn input
                 |> Task.mapErr
                     (\err ->
                         when err is
@@ -102,7 +110,10 @@ runSteps = \steps, results ->
                             InputDecodingFailed -> InputDecodingFailed
                     )
                 |> Task.await
-            runSteps rest (Dict.insert results step.name output)
+            runSteps
+                restSteps
+                restRunFns
+                (Dict.insert results step.name output)
 
 # Replacement for Task.forEach which at the moment crashes for me.
 taskForEach : List a, (a -> Task {} b) -> Task {} b

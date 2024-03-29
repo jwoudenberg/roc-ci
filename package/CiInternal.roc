@@ -11,30 +11,39 @@ interface CiInternal
 
 Job := JobSpec
 
-JobSpec : { steps : List Step, errors : List Str }
+JobSpec : {
+    steps : List Step,
+    runFns : List (List U8 -> Task (List U8) [UserError Str, InputDecodingFailed]),
+    errors : List Str,
+}
 
 Step : {
     name : Str,
     dependencies : List Str,
-    run : List U8 -> Task (List U8) [UserError Str, InputDecodingFailed],
 }
 
-addStep : Job, Step -> Job
-addStep = \@Job { steps, errors }, step ->
-    nameAlreadyUsed = List.any steps (\{ name } -> name == step.name)
+addStep :
+    Job,
+    Step,
+    (List U8 -> Task (List U8) [UserError Str, InputDecodingFailed])
+    -> Job
+addStep = \@Job { steps, runFns, errors }, { name, dependencies }, run ->
+    nameAlreadyUsed = List.any steps (\otherStep -> name == otherStep.name)
     if nameAlreadyUsed then
         @Job {
             steps,
-            errors: List.append errors "Duplicate step name: $(step.name)",
+            runFns,
+            errors: List.append errors "Duplicate step name: $(name)",
         }
     else
         @Job {
-            steps: List.append steps step,
+            steps: List.append steps { name, dependencies },
+            runFns: List.append runFns run,
             errors,
         }
 
 done : Job
-done = @Job { steps: [], errors: [] }
+done = @Job { steps: [], errors: [], runFns: [] }
 
 spec : Job -> JobSpec
 spec = \@Job job -> job

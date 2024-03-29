@@ -50,14 +50,15 @@ step0 = \name, run, next ->
     step = {
         name,
         dependencies: [],
-        run: \_ ->
-            run
-            |> Task.map (\output -> Encode.toBytes output Rvn.compact)
-            |> Task.mapErr (\err -> UserError err),
     }
 
+    runSerialized = \_ ->
+        run
+        |> Task.map (\output -> Encode.toBytes output Rvn.compact)
+        |> Task.mapErr (\err -> UserError err)
+
     next (@Input { dependsOn: step.name })
-    |> CiInternal.addStep step
+    |> CiInternal.addStep step runSerialized
 
 step1 : Str,
     (a -> Task b Str),
@@ -78,11 +79,10 @@ step1 = \name, run, @Input { dependsOn }, next ->
     step = {
         name,
         dependencies: [dependsOn],
-        run: runSerialized,
     }
 
     next (@Input { dependsOn: step.name })
-    |> CiInternal.addStep step
+    |> CiInternal.addStep step runSerialized
 
 step2 : Str,
     (a, b -> Task c Str),
@@ -113,11 +113,10 @@ step2 = \name, run, @Input input1, @Input input2, next ->
     step = {
         name,
         dependencies: [input1.dependsOn, input2.dependsOn],
-        run: runSerialized,
     }
 
     next (@Input { dependsOn: step.name })
-    |> CiInternal.addStep step
+    |> CiInternal.addStep step runSerialized
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
 setupGit = Task.err "setupGit unimplemented"
