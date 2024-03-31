@@ -3,21 +3,27 @@ interface CiInternal
         Job,
         addStep,
         done,
-        spec,
-        JobSpec,
+        jobErrors,
+        jobSteps,
         Step,
+        StepError,
     ]
     imports [pf.Task.{ Task }]
 
-Job := JobSpec
-
-JobSpec : { steps : List Step, errors : List Str }
+Job := { steps : List Step, errors : List Str }
 
 Step : {
     name : Str,
     dependencies : List Str,
-    run : List U8 -> Task (List U8) [UserError Str, InputDecodingFailed],
+    run : List U8 -> Task (List U8) StepError,
 }
+
+StepError : [
+    MissingDependency Str,
+    InputDecodingFailed,
+    UserError Str,
+    ConstructionErrors (List Str),
+]
 
 addStep : Job, Step -> Job
 addStep = \@Job { steps, errors }, step ->
@@ -36,5 +42,8 @@ addStep = \@Job { steps, errors }, step ->
 done : Job
 done = @Job { steps: [], errors: [] }
 
-spec : Job -> JobSpec
-spec = \@Job job -> job
+jobErrors : Job -> List Str
+jobErrors = \@Job { errors } -> errors
+
+jobSteps : Job -> List Step
+jobSteps = \@Job { steps } -> steps
