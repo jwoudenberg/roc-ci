@@ -2,67 +2,62 @@ interface Runner.LocalInternal
     exposes [
         run,
         Hook,
+        foo,
     ]
     imports [
-        pf.Task.{ Task },
-        CiInternal.{ Job, Step },
-        pf.Stdout,
+        CiTask.{ Task },
+        CiInternal.{ Job, Step, StepError },
     ]
 
 Hook : [CliCommand Str]
 
-Error : [
-    MissingDependency Str,
-    InputDecodingFailed,
-    UserError Str,
-    ConstructionErrors (List Str),
-]
+foo : List (Hook, Job)
+foo = [(CliCommand "hi", { errors: [], steps: [{ name: "", dependencies: [], run: \_ -> CiTask.ok [] }] })]
 
 run : List (Hook, Job), List Str -> Task {} I32
 run = \hooks, args ->
-    jobsByCommand =
-        List.walk
-            hooks
-            (Dict.empty {})
-            (\dict, (CliCommand cmd, job) -> Dict.insert dict cmd job)
-
     when args is
         [cmd] ->
-            when Dict.get jobsByCommand cmd is
-                Err KeyNotFound ->
-                    {} <- Stdout.line "unknown command '$(cmd)'" |> Task.await
-                    {} <- Stdout.line "" |> Task.await
-                    showHelp (Dict.keys jobsByCommand)
+            jobResult = List.findFirst hooks (\(CliCommand name, _) -> name == cmd)
+            when jobResult is
+                Err NotFound ->
+                    {} <- CiTask.stdoutLine "unknown command '$(cmd)'" |> CiTask.await
+                    {} <- CiTask.stdoutLine "" |> CiTask.await
+                    showHelp hooks
 
-                Ok job ->
+                Ok (_, job) ->
                     runJob job
-                    |> Task.mapErr runErrorToStr
-                    |> Task.onErr
-                        (\err ->
+                    |> CiTask.onErr (\err -> CiTask.stdoutLine (runErrorToStr err))
 
-                            {} <- Stdout.line err |> Task.await
-                            Task.err 1
-                        )
+        _ -> showHelp hooks
 
-        _ -> showHelp (Dict.keys jobsByCommand)
+showHelp : List (Hook, Job) -> Task {} I32
+showHelp = \hooks ->
+    {} <- CiTask.stdoutLine "Usage: roc-ci local <cmd>" |> CiTask.await
+    {} <- CiTask.stdoutLine "" |> CiTask.await
+    {} <- CiTask.stdoutLine "commands:" |> CiTask.await
+    {} <- taskForEach hooks (\(CliCommand cmd, _) -> CiTask.stdoutLine "  $(cmd)") |> CiTask.await
+    CiTask.err 1
 
-showHelp : List Str -> Task {} I32
-showHelp = \cmds ->
-    {} <- Stdout.line "Usage: roc-ci local <cmd>" |> Task.await
-    {} <- Stdout.line "" |> Task.await
-    {} <- Stdout.line "commands:" |> Task.await
-    {} <- taskForEach cmds (\cmd -> Stdout.line "  $(cmd)") |> Task.await
-    Task.err 1
-
-runJob : Job -> Task {} Error
+runJob : Job -> Task {} StepError
 runJob = \job ->
-    { steps, errors } = CiInternal.spec job
+    errors = CiInternal.jobErrors job
     if !(List.isEmpty errors) then
-        Task.err (ConstructionErrors errors)
+        CiTask.err (ConstructionErrors errors)
     else
-        runSteps steps (Dict.empty {})
+        CiTask.loop
+            (CiInternal.jobSteps job, Dict.empty {})
+            (\(accSteps, results) ->
+                when accSteps is
+                    [] ->
+                        CiTask.ok (Done {})
 
-runErrorToStr : Error -> Str
+                    [step, .. as rest] ->
+                        newResults <- runStep step results |> CiTask.await
+                        CiTask.ok (Step (rest, newResults))
+            )
+
+runErrorToStr : StepError -> Str
 runErrorToStr = \err ->
     when err is
         MissingDependency name ->
@@ -80,45 +75,34 @@ runErrorToStr = \err ->
                 "I found some problems with this job:\n"
                 (\acc, msg -> Str.concat acc "- $(msg)\n")
 
-runSteps : List Step, Dict Str (List U8) -> Task {} Error
-runSteps = \steps, results ->
-    when steps is
-        [] -> Task.ok {}
-        [step, .. as rest] ->
-            input <-
-                List.walk
-                    step.dependencies
-                    (Ok [])
-                    (\acc, dependency ->
-                        inputSoFar <- Result.try acc
-                        newInput <-
-                            Dict.get results dependency
-                            |> Result.mapErr (\KeyNotFound -> MissingDependency dependency)
-                            |> Result.try
-                        Ok (List.concat inputSoFar newInput)
-                    )
-                |> Task.fromResult
-                |> Task.await
-            output <-
-                step.run input
-                |> Task.mapErr
-                    (\err ->
-                        when err is
-                            UserError msg -> UserError msg
-                            InputDecodingFailed -> InputDecodingFailed
-                    )
-                |> Task.await
-            runSteps rest (Dict.insert results step.name output)
+runStep : Step, Dict Str (List U8) -> Task (Dict Str (List U8)) StepError
+runStep = \step, results ->
+    input <-
+        List.walk
+            step.dependencies
+            (Ok [])
+            (\acc, dependency ->
+                inputSoFar <- Result.try acc
+                newInput <-
+                    Dict.get results dependency
+                    |> Result.mapErr (\KeyNotFound -> MissingDependency dependency)
+                    |> Result.try
+                Ok (List.concat inputSoFar newInput)
+            )
+        |> CiTask.fromResult
+        |> CiTask.await
+    step.run input
+    |> CiTask.map (\output -> Dict.insert results step.name output)
 
-# Replacement for Task.forEach which at the moment crashes for me.
+# Replacement for CiTask.forEach which at the moment crashes for me.
 taskForEach : List a, (a -> Task {} b) -> Task {} b
 taskForEach = \list, fn ->
-    Task.loop
+    CiTask.loop
         list
         (\elems ->
             when elems is
-                [] -> Task.ok (Done {})
+                [] -> CiTask.ok (Done {})
                 [elem, .. as rest] ->
-                    {} <- fn elem |> Task.await
-                    Task.ok (Step rest)
+                    {} <- fn elem |> CiTask.await
+                    CiTask.ok (Step rest)
         )

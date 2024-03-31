@@ -4,11 +4,12 @@ app "roc-ci"
         rvn: "../../rvn/package/main.roc",
     }
     imports [
-        pf.Task.{ Task },
+        pf.Task,
         pf.Stdout,
         pf.Arg,
         rvn.Rvn,
         Ci.{ File, Dir },
+        CiTask.{ Task },
         Runner.Local,
         Runner.GithubActions,
     ]

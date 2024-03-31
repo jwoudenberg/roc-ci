@@ -6,7 +6,7 @@ interface Runner.GithubActionsInternal
         ReleaseTriggers,
     ]
     imports [
-        pf.Task.{ Task },
+        CiTask.{ Task },
         CiInternal.{ Job },
     ]
 

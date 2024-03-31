@@ -16,9 +16,8 @@ interface Ci
         setupGit,
     ]
     imports [
-        pf.Task.{ Task },
-        pf.Arg.{ Parser },
-        pf.Stdout,
+        pf.Task,
+        CiTask.{ Task, PfTask },
         rvn.Rvn,
         CiInternal,
         Hook,
@@ -52,8 +51,8 @@ step0 = \name, run, next ->
         dependencies: [],
         run: \_ ->
             run
-            |> Task.map (\output -> Encode.toBytes output Rvn.compact)
-            |> Task.mapErr (\err -> UserError err),
+            |> CiTask.map (\output -> Encode.toBytes output Rvn.compact)
+            |> CiTask.mapErr (\err -> UserError err),
     }
 
     next (@Input { dependsOn: step.name })
@@ -69,11 +68,11 @@ step1 = \name, run, @Input { dependsOn }, next ->
         when Decode.fromBytes inputBytes Rvn.compact is
             Ok arg ->
                 run arg
-                |> Task.map (\output -> Encode.toBytes output Rvn.compact)
-                |> Task.mapErr (\err -> UserError err)
+                |> CiTask.map (\output -> Encode.toBytes output Rvn.compact)
+                |> CiTask.mapErr (\err -> UserError err)
 
             Err _ ->
-                Task.err InputDecodingFailed
+                CiTask.err InputDecodingFailed
 
     step = {
         name,
@@ -96,19 +95,19 @@ step2 = \name, run, @Input input1, @Input input2, next ->
         arg1 <-
             result
             |> Result.mapErr (\_ -> InputDecodingFailed)
-            |> Task.fromResult
-            |> Task.await
+            |> CiTask.fromResult
+            |> CiTask.await
 
         result2 = Decode.fromBytes rest Rvn.compact
         arg2 <-
             result2
             |> Result.mapErr (\_ -> InputDecodingFailed)
-            |> Task.fromResult
-            |> Task.await
+            |> CiTask.fromResult
+            |> CiTask.await
 
         run arg1 arg2
-        |> Task.map (\output -> Encode.toBytes output Rvn.compact)
-        |> Task.mapErr (\err -> UserError err)
+        |> CiTask.map (\output -> Encode.toBytes output Rvn.compact)
+        |> CiTask.mapErr (\err -> UserError err)
 
     step = {
         name,
@@ -120,11 +119,16 @@ step2 = \name, run, @Input input1, @Input input2, next ->
     |> CiInternal.addStep step
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
-setupGit = Task.err "setupGit unimplemented"
+setupGit = CiTask.err "setupGit unimplemented"
 
-main : List Hook -> Task {} I32
+main : List Hook -> Task.Task {} I32
 main = \hooks ->
-    args <- Arg.list |> Task.await
+    ciTaskMain hooks
+    |> CiTask.toPlatformTask
+
+ciTaskMain : List Hook -> Task {} I32
+ciTaskMain = \hooks ->
+    args <- CiTask.argList |> CiTask.await
 
     { githubActions, local } =
         List.walk
@@ -141,25 +145,25 @@ main = \hooks ->
 
     when List.dropFirst args 1 is
         ["local", .. as rest] if !(List.isEmpty local) ->
-            Runner.LocalInternal.run local rest
+            Runner.LocalInternal.run Runner.LocalInternal.foo rest
 
         ["github-actions", .. as rest] if !(List.isEmpty githubActions) ->
             Runner.GithubActionsInternal.run githubActions rest
 
         _ ->
-            {} <- Stdout.line "Usage: roc-ci <runner> [params]" |> Task.await
-            {} <- Stdout.line "" |> Task.await
+            {} <- CiTask.stdoutLine "Usage: roc-ci <runner> [params]" |> CiTask.await
+            {} <- CiTask.stdoutLine "" |> CiTask.await
 
             if List.isEmpty hooks then
-                Stdout.line "Add some hooks to run this pipeline!"
+                CiTask.stdoutLine "Add some hooks to run this pipeline!"
             else
                 printIf = \line, list, andThen ->
                     if List.isEmpty list then
-                        Task.ok {} |> Task.await andThen
+                        CiTask.ok {} |> CiTask.await andThen
                     else
-                        Stdout.line line |> Task.await andThen
+                        CiTask.stdoutLine line |> CiTask.await andThen
 
-                {} <- "runners:" |> Stdout.line |> Task.await
+                {} <- "runners:" |> CiTask.stdoutLine |> CiTask.await
                 {} <- "  local             Run jobs on this machine" |> printIf local
                 {} <- "  github-actions    Generate github actions files" |> printIf githubActions
-                Task.ok {}
+                CiTask.ok {}
