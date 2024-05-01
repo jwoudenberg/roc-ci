@@ -7,7 +7,6 @@ interface Ci
 
         # Job definition
         Input,
-        done,
         step0,
         step1,
         step2,
@@ -32,8 +31,6 @@ Job : CiInternal.Job
 
 Hook : Hook.Hook
 
-done = CiInternal.done
-
 Input val := {
     dependsOn : Str,
 }
@@ -42,11 +39,11 @@ File := {} implements [Encoding, Decoding]
 
 Dir := {} implements [Encoding, Decoding]
 
-step0 : Str,
-    Task b Str,
-    (Input b -> Job)
-    -> Job where b implements Encoding
-step0 = \name, run, next ->
+step0 : Job,
+    Str,
+    Task b Str
+    -> (Job, Input b) where b implements Encoding
+step0 = \job, name, run ->
     step = {
         name,
         dependencies: [],
@@ -56,15 +53,15 @@ step0 = \name, run, next ->
             |> Task.mapErr (\err -> UserError err),
     }
 
-    next (@Input { dependsOn: step.name })
-    |> CiInternal.addStep step
+    input = @Input { dependsOn: step.name }
+    (CiInternal.addStep job step, input)
 
-step1 : Str,
+step1 : Job,
+    Str,
     (a -> Task b Str),
-    Input a,
-    (Input b -> Job)
-    -> Job where a implements Decoding, b implements Encoding
-step1 = \name, run, @Input { dependsOn }, next ->
+    Input a
+    -> (Job, Input b) where a implements Decoding, b implements Encoding
+step1 = \job, name, run, @Input { dependsOn } ->
     runSerialized = \inputBytes ->
         when Decode.fromBytes inputBytes Rvn.compact is
             Ok arg ->
@@ -81,16 +78,16 @@ step1 = \name, run, @Input { dependsOn }, next ->
         run: runSerialized,
     }
 
-    next (@Input { dependsOn: step.name })
-    |> CiInternal.addStep step
+    input = @Input { dependsOn: step.name }
+    (CiInternal.addStep job step, input)
 
-step2 : Str,
+step2 : Job,
+    Str,
     (a, b -> Task c Str),
     Input a,
-    Input b,
-    (Input c -> Job)
-    -> Job where a implements Decoding, b implements Decoding, c implements Encoding
-step2 = \name, run, @Input input1, @Input input2, next ->
+    Input b
+    -> (Job, Input c) where a implements Decoding, b implements Decoding, c implements Encoding
+step2 = \job, name, run, @Input input1, @Input input2 ->
     runSerialized = \inputBytes ->
         { result, rest } = Decode.fromBytesPartial inputBytes Rvn.compact
         arg1 <-
@@ -116,8 +113,8 @@ step2 = \name, run, @Input input1, @Input input2, next ->
         run: runSerialized,
     }
 
-    next (@Input { dependsOn: step.name })
-    |> CiInternal.addStep step
+    input = @Input { dependsOn: step.name }
+    (CiInternal.addStep job step, input)
 
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
 setupGit = Task.err "setupGit unimplemented"

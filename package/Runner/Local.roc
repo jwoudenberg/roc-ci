@@ -7,6 +7,6 @@ interface Runner.Local
         Hook.{ Hook },
     ]
 
-onCliCommand : Str, Job -> Hook
-onCliCommand = \cmd, job ->
-    Hook.wrap { job, trigger: Local (CliCommand cmd) }
+onCliCommand : Str, (Job -> Job) -> Hook
+onCliCommand = \cmd, mkJob ->
+    Hook.wrap { job: mkJob CiInternal.empty, trigger: Local (CliCommand cmd) }

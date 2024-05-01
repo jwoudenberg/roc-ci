@@ -9,10 +9,10 @@ interface Runner.GithubActions
         Runner.GithubActionsInternal.{ PullRequestTriggers, ReleaseTriggers },
     ]
 
-onPullRequest : List PullRequestTriggers, Job -> Hook
-onPullRequest = \triggers, job ->
-    Hook.wrap { job, trigger: GithubActions (PullRequest triggers) }
+onPullRequest : List PullRequestTriggers, (Job -> Job) -> Hook
+onPullRequest = \triggers, mkJob ->
+    Hook.wrap { job: mkJob CiInternal.empty, trigger: GithubActions (PullRequest triggers) }
 
-onRelease : List ReleaseTriggers, Job -> Hook
-onRelease = \triggers, job ->
-    Hook.wrap { job, trigger: GithubActions (Release triggers) }
+onRelease : List ReleaseTriggers, (Job -> Job) -> Hook
+onRelease = \triggers, mkJob ->
+    Hook.wrap { job: mkJob CiInternal.empty, trigger: GithubActions (Release triggers) }

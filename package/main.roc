@@ -19,13 +19,13 @@ main = Ci.main [
     Runner.GithubActions.onPullRequest [] buildAndTest,
 ]
 
-buildAndTest : Ci.Job
-buildAndTest =
-    repoDetails <- Ci.step0 "setup git" Ci.setupGit
-    binary <- Ci.step1 "build binary" buildBinary repoDetails
-    testsPass <- Ci.step1 "run tests" runTests binary
-    _ <- Ci.step2 "release" release binary testsPass
-    Ci.done
+buildAndTest : Ci.Job -> Ci.Job
+buildAndTest = \job0 ->
+    (job1, repoDetails) = Ci.step0 job0 "setup git" Ci.setupGit
+    (job2, binary) = Ci.step1 job1 "build binary" buildBinary repoDetails
+    (job3, testsPass) = Ci.step1 job2 "run tests" runTests binary
+    (job4, _) = Ci.step2 job3 "release" release binary testsPass
+    job3
 
 buildBinary : { gitRoot : Dir }* -> Task File Str
 

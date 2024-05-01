@@ -2,7 +2,7 @@ interface CiInternal
     exposes [
         Job,
         addStep,
-        done,
+        empty,
         jobErrors,
         jobSteps,
         Step,
@@ -39,8 +39,8 @@ addStep = \@Job { steps, errors }, step ->
             errors,
         }
 
-done : Job
-done = @Job { steps: [], errors: [] }
+empty : Job
+empty = @Job { steps: [], errors: [] }
 
 jobErrors : Job -> List Str
 jobErrors = \@Job { errors } -> errors
