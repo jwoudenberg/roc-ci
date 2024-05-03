@@ -1,14 +1,14 @@
-interface CiInternal
-    exposes [
-        Job,
-        addStep,
-        done,
-        jobErrors,
-        jobSteps,
-        Step,
-        StepError,
-    ]
-    imports [pf.Task.{ Task }]
+module [
+    Job,
+    addStep,
+    done,
+    jobErrors,
+    jobSteps,
+    Step,
+    StepError,
+]
+
+import pf.Task exposing [Task]
 
 Job := { steps : List Step, errors : List Str }
 

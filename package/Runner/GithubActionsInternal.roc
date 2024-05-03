@@ -1,14 +1,12 @@
-interface Runner.GithubActionsInternal
-    exposes [
-        run,
-        Hook,
-        PullRequestTriggers,
-        ReleaseTriggers,
-    ]
-    imports [
-        pf.Task.{ Task },
-        CiInternal.{ Job },
-    ]
+module [
+    run,
+    Hook,
+    PullRequestTriggers,
+    ReleaseTriggers,
+]
+
+import pf.Task exposing [Task]
+import CiInternal exposing [Job]
 
 PullRequestTriggers : [
     Assigned,

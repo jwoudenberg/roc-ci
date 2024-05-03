@@ -1,14 +1,12 @@
-interface Hook
-    exposes [
-        Hook,
-        wrap,
-        unwrap,
-    ]
-    imports [
-        Runner.GithubActionsInternal,
-        Runner.LocalInternal,
-        CiInternal.{ Job },
-    ]
+module [
+    Hook,
+    wrap,
+    unwrap,
+]
+
+import Runner.GithubActionsInternal
+import Runner.LocalInternal
+import CiInternal exposing [Job]
 
 HookContents : {
     trigger : [

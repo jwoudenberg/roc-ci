@@ -1,30 +1,28 @@
-interface Ci
-    exposes [
-        Job,
-        File,
-        Dir,
-        main,
+module [
+    Job,
+    File,
+    Dir,
+    main,
 
-        # Job definition
-        Input,
-        done,
-        step0,
-        step1,
-        step2,
+    # Job definition
+    Input,
+    done,
+    step0,
+    step1,
+    step2,
 
-        # Setup steps
-        setupGit,
-    ]
-    imports [
-        pf.Task.{ Task },
-        pf.Arg.{ Parser },
-        pf.Stdout,
-        rvn.Rvn,
-        CiInternal,
-        Hook,
-        Runner.LocalInternal,
-        Runner.GithubActionsInternal,
-    ]
+    # Setup steps
+    setupGit,
+]
+
+import pf.Task exposing [Task]
+import pf.Arg
+import pf.Stdout
+import rvn.Rvn
+import CiInternal
+import Hook
+import Runner.LocalInternal
+import Runner.GithubActionsInternal
 
 # TODO: Figure out how to pull File/Dir values out of arbitrary input structures
 

@@ -1,13 +1,11 @@
-interface Runner.LocalInternal
-    exposes [
-        run,
-        Hook,
-    ]
-    imports [
-        pf.Task.{ Task },
-        CiInternal.{ Job, Step, StepError },
-        pf.Stdout,
-    ]
+module [
+    run,
+    Hook,
+]
+
+import pf.Task exposing [Task]
+import CiInternal exposing [Job, Step, StepError]
+import pf.Stdout
 
 Hook : [CliCommand Str]
 

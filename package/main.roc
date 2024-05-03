@@ -1,18 +1,12 @@
-app "roc-ci"
-    packages {
-        pf: "https://github.com/roc-lang/basic-cli/releases/download/0.8.1/x8URkvfyi9I0QhmVG98roKBUs_AZRkLFwFJVJ3942YA.tar.br",
-        rvn: "../../rvn/package/main.roc",
-    }
-    imports [
-        pf.Task.{ Task },
-        pf.Stdout,
-        pf.Arg,
-        rvn.Rvn,
-        Ci.{ File, Dir },
-        Runner.Local,
-        Runner.GithubActions,
-    ]
-    provides [main] to pf
+app [main] {
+    pf: platform "https://github.com/roc-lang/basic-cli/releases/download/0.8.1/x8URkvfyi9I0QhmVG98roKBUs_AZRkLFwFJVJ3942YA.tar.br",
+    rvn: "../../rvn/package/main.roc",
+}
+
+import pf.Task exposing [Task]
+import Ci exposing [File, Dir]
+import Runner.Local
+import Runner.GithubActions
 
 main = Ci.main [
     Runner.Local.onCliCommand "test" buildAndTest,

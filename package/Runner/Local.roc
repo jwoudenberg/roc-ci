@@ -1,11 +1,9 @@
-interface Runner.Local
-    exposes [
-        onCliCommand,
-    ]
-    imports [
-        CiInternal.{ Job },
-        Hook.{ Hook },
-    ]
+module [
+    onCliCommand,
+]
+
+import CiInternal exposing [Job]
+import Hook exposing [Hook]
 
 onCliCommand : Str, Job -> Hook
 onCliCommand = \cmd, job ->

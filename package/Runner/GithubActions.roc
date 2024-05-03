@@ -1,13 +1,11 @@
-interface Runner.GithubActions
-    exposes [
-        onPullRequest,
-        onRelease,
-    ]
-    imports [
-        CiInternal.{ Job },
-        Hook.{ Hook },
-        Runner.GithubActionsInternal.{ PullRequestTriggers, ReleaseTriggers },
-    ]
+module [
+    onPullRequest,
+    onRelease,
+]
+
+import CiInternal exposing [Job]
+import Hook exposing [Hook]
+import Runner.GithubActionsInternal exposing [PullRequestTriggers, ReleaseTriggers]
 
 onPullRequest : List PullRequestTriggers, Job -> Hook
 onPullRequest = \triggers, job ->
