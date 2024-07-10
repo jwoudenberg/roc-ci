@@ -9,15 +9,15 @@ import pf.Stdout
 
 Hook : [CliCommand Str]
 
-run : List (Hook, Job), List Str -> Task {} I32
+run : List (Hook, Job), List Str -> Task {} _
 run = \hooks, args ->
     when args is
         [cmd] ->
             jobResult = List.findFirst hooks (\(CliCommand name, _) -> name == cmd)
             when jobResult is
                 Err NotFound ->
-                    {} <- Stdout.line "unknown command '$(cmd)'" |> Task.await
-                    {} <- Stdout.line "" |> Task.await
+                    Stdout.line! "unknown command '$(cmd)'"
+                    Stdout.line! ""
                     showHelp hooks
 
                 Ok (_, job) ->
@@ -26,13 +26,13 @@ run = \hooks, args ->
 
         _ -> showHelp hooks
 
-showHelp : List (Hook, Job) -> Task {} I32
+showHelp : List (Hook, Job) -> Task {} _
 showHelp = \hooks ->
-    {} <- Stdout.line "Usage: roc-ci local <cmd>" |> Task.await
-    {} <- Stdout.line "" |> Task.await
-    {} <- Stdout.line "commands:" |> Task.await
-    {} <- taskForEach hooks (\(CliCommand cmd, _) -> Stdout.line "  $(cmd)") |> Task.await
-    Task.err 1
+    Stdout.line! "Usage: roc-ci local <cmd>"
+    Stdout.line! ""
+    Stdout.line! "commands:"
+    taskForEach! hooks (\(CliCommand cmd, _) -> Stdout.line "  $(cmd)")
+    Task.err HelpOutput
 
 runJob : Job -> Task {} StepError
 runJob = \job ->
@@ -48,7 +48,7 @@ runJob = \job ->
                         Task.ok (Done {})
 
                     [step, .. as rest] ->
-                        newResults <- runStep step results |> Task.await
+                        newResults = runStep! step results
                         Task.ok (Step (rest, newResults))
             )
 
@@ -72,7 +72,7 @@ runErrorToStr = \err ->
 
 runStep : Step, Dict Str (List U8) -> Task (Dict Str (List U8)) StepError
 runStep = \step, results ->
-    input <-
+    input =
         List.walk
             step.dependencies
             (Ok [])
@@ -84,8 +84,7 @@ runStep = \step, results ->
                     |> Result.try
                 Ok (List.concat inputSoFar newInput)
             )
-        |> Task.fromResult
-        |> Task.await
+            |> Task.fromResult!
     step.run input
     |> Task.map (\output -> Dict.insert results step.name output)
 
@@ -98,6 +97,6 @@ taskForEach = \list, fn ->
             when elems is
                 [] -> Task.ok (Done {})
                 [elem, .. as rest] ->
-                    {} <- fn elem |> Task.await
+                    fn! elem
                     Task.ok (Step rest)
         )

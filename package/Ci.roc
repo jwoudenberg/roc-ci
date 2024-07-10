@@ -91,18 +91,16 @@ step2 : Str,
 step2 = \name, run, @Input input1, @Input input2, next ->
     runSerialized = \inputBytes ->
         { result, rest } = Decode.fromBytesPartial inputBytes Rvn.compact
-        arg1 <-
+        arg1 =
             result
-            |> Result.mapErr (\_ -> InputDecodingFailed)
-            |> Task.fromResult
-            |> Task.await
+                |> Result.mapErr (\_ -> InputDecodingFailed)
+                |> Task.fromResult!
 
         result2 = Decode.fromBytes rest Rvn.compact
-        arg2 <-
+        arg2 =
             result2
-            |> Result.mapErr (\_ -> InputDecodingFailed)
-            |> Task.fromResult
-            |> Task.await
+                |> Result.mapErr (\_ -> InputDecodingFailed)
+                |> Task.fromResult!
 
         run arg1 arg2
         |> Task.map (\output -> Encode.toBytes output Rvn.compact)
@@ -120,9 +118,16 @@ step2 = \name, run, @Input input1, @Input input2, next ->
 setupGit : Task { gitRoot : Dir, branch : Str, hash : Str, author : Str } Str
 setupGit = Task.err "setupGit unimplemented"
 
-main : List Hook -> Task {} I32
+printIfExists : Str, List a -> Task {} _
+printIfExists = \line, list ->
+    if List.isEmpty list then
+        Task.ok! {}
+    else
+        Stdout.line! line
+
+main : List Hook -> Task {} _
 main = \hooks ->
-    args <- Arg.list |> Task.await
+    args = Arg.list!
 
     { githubActions, local } =
         List.walk
@@ -145,19 +150,12 @@ main = \hooks ->
             Runner.GithubActionsInternal.run githubActions rest
 
         _ ->
-            {} <- Stdout.line "Usage: roc-ci <runner> [params]" |> Task.await
-            {} <- Stdout.line "" |> Task.await
+            Stdout.line! "Usage: roc-ci <runner> [params]"
+            Stdout.line! ""
 
             if List.isEmpty hooks then
                 Stdout.line "Add some hooks to run this pipeline!"
             else
-                printIf = \line, list, andThen ->
-                    if List.isEmpty list then
-                        Task.ok {} |> Task.await andThen
-                    else
-                        Stdout.line line |> Task.await andThen
-
-                {} <- "runners:" |> Stdout.line |> Task.await
-                {} <- "  local             Run jobs on this machine" |> printIf local
-                {} <- "  github-actions    Generate github actions files" |> printIf githubActions
-                Task.ok {}
+                Stdout.line! "runners:"
+                printIfExists! "  local             Run jobs on this machine" local
+                printIfExists "  github-actions    Generate github actions files" githubActions
