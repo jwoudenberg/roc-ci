@@ -5,7 +5,6 @@ module [
     ReleaseTriggers,
 ]
 
-import pf.Task exposing [Task]
 import CiInternal exposing [Job]
 
 PullRequestTriggers : [

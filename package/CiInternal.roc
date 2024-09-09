@@ -8,8 +8,6 @@ module [
     StepError,
 ]
 
-import pf.Task exposing [Task]
-
 Job := { steps : List Step, errors : List Str }
 
 Step : {

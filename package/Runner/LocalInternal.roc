@@ -3,7 +3,6 @@ module [
     Hook,
 ]
 
-import pf.Task exposing [Task]
 import CiInternal exposing [Job, Step, StepError]
 import pf.Stdout
 

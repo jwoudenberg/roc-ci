@@ -15,7 +15,6 @@ module [
     setupGit,
 ]
 
-import pf.Task exposing [Task]
 import pf.Arg
 import pf.Stdout
 import rvn.Rvn
@@ -127,7 +126,7 @@ printIfExists = \line, list ->
 
 main : List Hook -> Task {} _
 main = \hooks ->
-    args = Arg.list!
+    args = Arg.list! {}
 
     { githubActions, local } =
         List.walk
